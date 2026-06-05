@@ -92,6 +92,23 @@ svg {
   background: rgba(149, 159, 100, 0.18);
 }
 
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 180px;
+  min-height: 34px;
+  padding: 0 12px;
+  overflow: hidden;
+  color: var(--green);
+  background: rgba(93, 46, 63, 0.08);
+  border: 1px solid rgba(93, 46, 63, 0.16);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .brand-mark {
   display: grid;
   width: 44px;
@@ -160,6 +177,106 @@ svg {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
   padding: 34px 0 56px;
+}
+
+.auth-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(100%, 620px);
+  padding: clamp(24px, 5vw, 44px);
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 34px;
+}
+
+.auth-brand strong,
+.auth-brand span {
+  display: block;
+}
+
+.auth-brand strong {
+  color: var(--green);
+  font-size: 1.05rem;
+}
+
+.auth-brand span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.auth-copy h1 {
+  max-width: 540px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(2rem, 8vw, 4.3rem);
+  line-height: 0.98;
+}
+
+.auth-copy p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.auth-form {
+  margin-top: 28px;
+}
+
+.auth-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.auth-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.auth-row input {
+  min-width: 0;
+  min-height: 54px;
+  padding: 0 16px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.auth-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.auth-note.ok {
+  color: #3a5d01;
+  background: rgba(149, 159, 100, 0.18);
+}
+
+.auth-note.bad {
+  color: var(--green);
+  background: rgba(93, 46, 63, 0.1);
 }
 
 .hero {
@@ -1866,6 +1983,10 @@ svg {
   .hero-actions,
   .result-actions {
     flex-direction: column;
+  }
+
+  .auth-row {
+    grid-template-columns: 1fr;
   }
 
   .primary,

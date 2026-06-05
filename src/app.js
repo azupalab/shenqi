@@ -1,5 +1,6 @@
 const STORE_KEY = "minsal-acupuntura-progress-v1";
 const STREAK_KEY = "shenqi_racha";
+const AUTH_KEY = "shenqi_auth_session";
 
 const modules = [
   {
@@ -170,19 +171,22 @@ const MODULE_GUIDES = {
 
 const payload = window.MINSAL_QUESTIONS || { questions: [], summary: {} };
 const extraPayload = window.MINSAL_EXTRA_QUESTIONS || { questions: [] };
-const QUESTION_CORRECTIONS = {
-  q0040: {
+const QUESTION_CORRECTIONS = [
+  {
+    match: "sentido normal del gusto",
     answer: "Bazo",
-    explanation: "El bazo contiene la sangre",
+    explanation: "El bazo se abre en la boca y se relaciona con el gusto.",
   },
-  q0042: {
+  {
+    match: "contiene la sangre",
     answer: "Bazo",
-    explanation: "El bazo se abre en la boca",
+    explanation: "El bazo contiene la sangre.",
   },
-};
+];
 
 function normalizeQuestion(question) {
-  const correction = QUESTION_CORRECTIONS[question.id];
+  const prompt = String(question.prompt || "").toLowerCase();
+  const correction = QUESTION_CORRECTIONS.find((item) => prompt.includes(item.match));
   if (!correction) return question;
   const answerIndex = question.options.findIndex((option) => option === correction.answer);
   if (answerIndex < 0) return question;
@@ -239,10 +243,142 @@ let timerId = null;
 let muted = false;
 let audioPlaying = false;
 let questionSource = "local";
+let currentUser = null;
+let authLoading = false;
+let authMessage = "";
+let authError = "";
 
 function supabaseEnabled() {
   const config = window.SHENQI_SUPABASE || {};
   return Boolean(config.url && config.anonKey);
+}
+
+function supabaseBaseUrl() {
+  return (window.SHENQI_SUPABASE?.url || "").replace(/\/$/, "");
+}
+
+function supabaseHeaders(token = window.SHENQI_SUPABASE?.anonKey) {
+  const anonKey = window.SHENQI_SUPABASE?.anonKey || "";
+  return {
+    apikey: anonKey,
+    Authorization: `Bearer ${token || anonKey}`,
+    "Content-Type": "application/json",
+  };
+}
+
+function authRedirectUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+function readAuthSession() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveAuthSession(authSession) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(authSession));
+}
+
+function clearAuthSession() {
+  localStorage.removeItem(AUTH_KEY);
+  currentUser = null;
+}
+
+function progressStorageKey() {
+  const userKey = currentUser?.id || currentUser?.email;
+  return userKey ? `${STORE_KEY}:${userKey}` : STORE_KEY;
+}
+
+function streakStorageKey() {
+  const userKey = currentUser?.id || currentUser?.email;
+  return userKey ? `${STREAK_KEY}:${userKey}` : STREAK_KEY;
+}
+
+async function fetchAuthUser(accessToken) {
+  const response = await fetch(`${supabaseBaseUrl()}/auth/v1/user`, {
+    headers: supabaseHeaders(accessToken),
+  });
+  if (!response.ok) throw new Error("No se pudo validar la sesion.");
+  return response.json();
+}
+
+async function refreshAuthSession(authSession) {
+  if (!supabaseEnabled() || !authSession?.refresh_token) return null;
+  const response = await fetch(`${supabaseBaseUrl()}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: supabaseHeaders(),
+    body: JSON.stringify({ refresh_token: authSession.refresh_token }),
+  });
+  if (!response.ok) throw new Error("La sesion expiro.");
+  return response.json();
+}
+
+async function handleAuthRedirect() {
+  if (!window.location.hash.includes("access_token")) return;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const authSession = {
+    access_token: params.get("access_token"),
+    refresh_token: params.get("refresh_token"),
+    expires_at: Date.now() + Number(params.get("expires_in") || 3600) * 1000,
+  };
+  if (authSession.access_token) {
+    saveAuthSession(authSession);
+    window.history.replaceState({}, document.title, authRedirectUrl());
+    authMessage = "Sesion iniciada. Ya puedes estudiar.";
+  }
+}
+
+async function loadAuthUser() {
+  if (!supabaseEnabled()) return;
+  let authSession = readAuthSession();
+  if (!authSession?.access_token) return;
+  try {
+    if (authSession.expires_at && Date.now() > authSession.expires_at - 60000) {
+      authSession = await refreshAuthSession(authSession);
+      authSession.expires_at = Date.now() + Number(authSession.expires_in || 3600) * 1000;
+      saveAuthSession(authSession);
+    }
+    currentUser = await fetchAuthUser(authSession.access_token);
+  } catch (error) {
+    console.warn("Sesion no valida.", error);
+    clearAuthSession();
+  }
+}
+
+async function sendLoginLink(email) {
+  if (!supabaseEnabled()) throw new Error("Supabase no esta configurado.");
+  const response = await fetch(`${supabaseBaseUrl()}/auth/v1/otp`, {
+    method: "POST",
+    headers: supabaseHeaders(),
+    body: JSON.stringify({
+      email,
+      create_user: true,
+      options: {
+        email_redirect_to: authRedirectUrl(),
+      },
+    }),
+  });
+  if (!response.ok) throw new Error("No se pudo enviar el enlace. Revisa la configuracion de Auth en Supabase.");
+}
+
+async function signOut() {
+  const authSession = readAuthSession();
+  try {
+    if (authSession?.access_token && supabaseEnabled()) {
+      await fetch(`${supabaseBaseUrl()}/auth/v1/logout`, {
+        method: "POST",
+        headers: supabaseHeaders(authSession.access_token),
+      });
+    }
+  } catch {}
+  clearAuthSession();
+  state = loadState();
+  authMessage = "Sesion cerrada.";
+  screen = "home";
+  render();
 }
 
 function remoteQuestionToLocal(row) {
@@ -295,7 +431,7 @@ function loadState() {
     lastMode: "practice",
   };
   try {
-    const saved = { ...fallback, ...JSON.parse(localStorage.getItem(STORE_KEY)) };
+    const saved = { ...fallback, ...JSON.parse(localStorage.getItem(progressStorageKey())) };
     saved.mastered = saved.mastered || {};
     saved.mistakes = Array.isArray(saved.mistakes) ? saved.mistakes : [];
     saved.completedByModule = saved.completedByModule || {};
@@ -306,7 +442,7 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  localStorage.setItem(progressStorageKey(), JSON.stringify(state));
 }
 
 function todayKey() {
@@ -315,7 +451,7 @@ function todayKey() {
 
 function readStreak() {
   try {
-    return JSON.parse(localStorage.getItem(STREAK_KEY)) || { dias: 0, ultimoDia: null };
+    return JSON.parse(localStorage.getItem(streakStorageKey())) || { dias: 0, ultimoDia: null };
   } catch {
     return { dias: 0, ultimoDia: null };
   }
@@ -341,7 +477,7 @@ function registerStudyDay() {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayKey = yesterday.toISOString().split("T")[0];
   const nextDays = ultimoDia === yesterdayKey ? dias + 1 : 1;
-  localStorage.setItem(STREAK_KEY, JSON.stringify({ dias: nextDays, ultimoDia: today }));
+  localStorage.setItem(streakStorageKey(), JSON.stringify({ dias: nextDays, ultimoDia: today }));
   state.streak = nextDays;
 }
 
@@ -517,6 +653,54 @@ function lessonSpeechText(lesson) {
   ].join(". ");
 }
 
+function bestSpanishVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  const spanishVoices = voices.filter((voice) => voice.lang?.toLowerCase().startsWith("es"));
+  if (!spanishVoices.length) return null;
+  const preferredNames = [
+    "jorge",
+    "diego",
+    "juan",
+    "carlos",
+    "miguel",
+    "google español de estados unidos",
+    "google español latino",
+    "google spanish latin",
+    "google español",
+    "google spanish",
+    "paulina",
+    "monica",
+    "mónica",
+    "luciana",
+    "marisol",
+    "angelica",
+    "ángelica",
+    "premium",
+    "enhanced",
+  ];
+  return spanishVoices
+    .map((voice) => {
+      const name = voice.name.toLowerCase();
+      const preferredIndex = preferredNames.findIndex((item) => name.includes(item));
+      const preferredScore = preferredIndex >= 0 ? 100 - preferredIndex : 0;
+      const localScore = voice.localService ? 12 : 0;
+      const localeScore = voice.lang.toLowerCase().includes("419") ? 24 : voice.lang.toLowerCase().includes("cl") ? 18 : 0;
+      const compactPenalty = name.includes("compact") ? -25 : 0;
+      return { voice, score: preferredScore + localScore + localeScore + compactPenalty };
+    })
+    .sort((a, b) => b.score - a.score)[0].voice;
+}
+
+function configureSpeech(utterance) {
+  utterance.rate = 0.86;
+  utterance.pitch = 0.96;
+  utterance.volume = 1;
+  const voice = bestSpanishVoice();
+  utterance.lang = voice?.lang || "es-419";
+  if (voice) utterance.voice = voice;
+}
+
 function speakLesson(lessonId) {
   const lesson = lessons.find((item) => item.id === lessonId);
   if (!lesson || !("speechSynthesis" in window)) {
@@ -534,12 +718,7 @@ function speakLesson(lessonId) {
     audioPlaying = false;
     render();
   };
-  utterance.lang = "es-CL";
-  utterance.rate = 0.92;
-  utterance.pitch = 1;
-  const voices = window.speechSynthesis.getVoices();
-  const spanishVoice = voices.find((voice) => voice.lang?.toLowerCase().startsWith("es"));
-  if (spanishVoice) utterance.voice = spanishVoice;
+  configureSpeech(utterance);
   window.speechSynthesis.speak(utterance);
   render();
 }
@@ -592,11 +771,7 @@ function speakModule(moduleId) {
     audioPlaying = false;
     render();
   };
-  utterance.lang = "es-CL";
-  utterance.rate = 0.92;
-  const voices = window.speechSynthesis.getVoices();
-  const spanishVoice = voices.find((voice) => voice.lang?.toLowerCase().startsWith("es"));
-  if (spanishVoice) utterance.voice = spanishVoice;
+  configureSpeech(utterance);
   window.speechSynthesis.speak(utterance);
   render();
 }
@@ -840,7 +1015,9 @@ function renderHome() {
         <button class="${screen === "home" ? "active" : ""}" data-screen="home">${icon("home")}Inicio</button>
         <button data-screen="library">${icon("book")}Textos</button>
         <button data-screen="stats">${icon("chart")}Progreso</button>
+        ${currentUser?.email ? `<span class="user-chip">${currentUser.email}</span>` : ""}
         <button data-action="toggle-mute">${icon(muted ? "pause" : "volume")}${muted ? "Silencio" : "Sonido"}</button>
+        <button data-action="logout">${icon("x")}Salir</button>
       </nav>
     </header>
 
@@ -926,6 +1103,36 @@ function renderHome() {
       </section>
     </main>
     ${renderBottomNav("home")}
+  `;
+}
+
+function renderLogin() {
+  return `
+    <main class="auth-screen">
+      <section class="auth-card">
+        <div class="auth-brand">
+          <span class="brand-mark logo-mark"><img src="./public/assets/logo1-shenqi.png" alt="" /></span>
+          <div>
+            <strong>ShenQi</strong>
+            <span>Preparacion MINSAL de acupuntura</span>
+          </div>
+        </div>
+        <div class="auth-copy">
+          <p class="eyebrow">Acceso privado</p>
+          <h1>Entra con tu correo para estudiar.</h1>
+          <p>Te enviaremos un enlace seguro. No necesitas contraseña para empezar a probar la app.</p>
+        </div>
+        <form class="auth-form" data-auth-form>
+          <label for="login-email">Correo</label>
+          <div class="auth-row">
+            <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required />
+            <button class="primary" type="submit" ${authLoading ? "disabled" : ""}>${authLoading ? "Enviando..." : "Enviar enlace"}</button>
+          </div>
+        </form>
+        ${authMessage ? `<p class="auth-note ok">${authMessage}</p>` : ""}
+        ${authError ? `<p class="auth-note bad">${authError}</p>` : ""}
+      </section>
+    </main>
   `;
 }
 
@@ -1503,8 +1710,9 @@ function renderTopbar(active) {
         <button class="${active === "home" ? "active" : ""}" data-screen="home">${icon("home")}Inicio</button>
         <button class="${active === "library" ? "active" : ""}" data-screen="library">${icon("book")}Textos</button>
         <button class="${active === "stats" ? "active" : ""}" data-screen="stats">${icon("chart")}Progreso</button>
-        <span class="source-badge ${questionSource === "supabase" ? "online" : ""}">${questionSource === "supabase" ? "Supabase" : "Offline"}</span>
+        ${currentUser?.email ? `<span class="user-chip">${currentUser.email}</span>` : ""}
         <button data-action="toggle-mute">${icon(muted ? "pause" : "volume")}${muted ? "Silencio" : "Sonido"}</button>
+        <button data-action="logout">${icon("x")}Salir</button>
       </nav>
     </header>
   `;
@@ -1527,6 +1735,10 @@ function renderEmpty(message) {
 
 function render() {
   const app = document.getElementById("app");
+  if (!currentUser) {
+    app.innerHTML = renderLogin();
+    return;
+  }
   app.innerHTML = screen === "quiz" ? renderQuiz()
     : screen === "result" ? renderResult()
     : screen === "game" ? renderGame()
@@ -1627,14 +1839,40 @@ document.addEventListener("click", (event) => {
     else startSession(session.mode, session.moduleId);
   }
   if (action === "reset") {
-    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(progressStorageKey());
+    localStorage.removeItem(streakStorageKey());
     state = loadState();
+    render();
+  }
+  if (action === "logout") signOut();
+});
+
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-auth-form]");
+  if (!form) return;
+  event.preventDefault();
+  const email = new FormData(form).get("email")?.toString().trim();
+  if (!email) return;
+  authLoading = true;
+  authMessage = "";
+  authError = "";
+  render();
+  try {
+    await sendLoginLink(email);
+    authMessage = `Listo. Revisa ${email} y abre el enlace de ShenQi.`;
+  } catch (error) {
+    authError = error.message || "No se pudo enviar el enlace.";
+  } finally {
+    authLoading = false;
     render();
   }
 });
 
 async function boot() {
   try {
+    await handleAuthRedirect();
+    await loadAuthUser();
+    state = loadState();
     await loadSupabaseQuestions();
   } catch (error) {
     console.warn("No se pudo cargar Supabase, usando banco local.", error);
