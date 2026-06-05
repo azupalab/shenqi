@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "build": "rm -rf dist && mkdir -p dist && cp -R index.html manifest.webmanifest sw.js src public dist/"
+  }
+}
