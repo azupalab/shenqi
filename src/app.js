@@ -245,6 +245,7 @@ let audioPlaying = false;
 let questionSource = "local";
 let currentUser = null;
 let authLoading = false;
+let authMode = "signin";
 let authMessage = "";
 let authError = "";
 
@@ -348,20 +349,38 @@ async function loadAuthUser() {
   }
 }
 
-async function sendLoginLink(email) {
+async function authenticateWithPassword(mode, email, password) {
   if (!supabaseEnabled()) throw new Error("Supabase no esta configurado.");
-  const response = await fetch(`${supabaseBaseUrl()}/auth/v1/otp`, {
+  const endpoint = mode === "signup"
+    ? `${supabaseBaseUrl()}/auth/v1/signup`
+    : `${supabaseBaseUrl()}/auth/v1/token?grant_type=password`;
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: supabaseHeaders(),
     body: JSON.stringify({
       email,
-      create_user: true,
-      options: {
-        email_redirect_to: authRedirectUrl(),
-      },
+      password,
+      data: { app: "shenqi" },
     }),
   });
-  if (!response.ok) throw new Error("No se pudo enviar el enlace. Revisa la configuracion de Auth en Supabase.");
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload.msg || payload.message || payload.error_description || "No se pudo autenticar.";
+    throw new Error(message);
+  }
+  if (payload.access_token) {
+    saveAuthSession({
+      ...payload,
+      expires_at: Date.now() + Number(payload.expires_in || 3600) * 1000,
+    });
+    currentUser = payload.user || await fetchAuthUser(payload.access_token);
+    state = loadState();
+    return "Sesion iniciada.";
+  }
+  if (mode === "signup") {
+    return "Cuenta creada. Revisa tu correo para confirmar y luego entra con tu contraseña.";
+  }
+  return "Revisa tu correo para confirmar la cuenta.";
 }
 
 async function signOut() {
@@ -1119,15 +1138,19 @@ function renderLogin() {
         </div>
         <div class="auth-copy">
           <p class="eyebrow">Acceso privado</p>
-          <h1>Entra con tu correo para estudiar.</h1>
-          <p>Te enviaremos un enlace seguro. No necesitas contraseña para empezar a probar la app.</p>
+          <h1>${authMode === "signup" ? "Crea tu cuenta ShenQi." : "Entra para continuar tu progreso."}</h1>
+          <p>${authMode === "signup" ? "Usa correo y contraseña. Tu avance quedara separado del resto de usuarios." : "Accede con tu correo y contraseña para recuperar XP, errores y racha."}</p>
+        </div>
+        <div class="auth-tabs">
+          <button class="${authMode === "signin" ? "active" : ""}" data-action="auth-mode" data-auth-mode="signin">Entrar</button>
+          <button class="${authMode === "signup" ? "active" : ""}" data-action="auth-mode" data-auth-mode="signup">Crear cuenta</button>
         </div>
         <form class="auth-form" data-auth-form>
           <label for="login-email">Correo</label>
-          <div class="auth-row">
-            <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required />
-            <button class="primary" type="submit" ${authLoading ? "disabled" : ""}>${authLoading ? "Enviando..." : "Enviar enlace"}</button>
-          </div>
+          <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required />
+          <label for="login-password">Contraseña</label>
+          <input id="login-password" name="password" type="password" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}" minlength="6" placeholder="Minimo 6 caracteres" required />
+          <button class="primary auth-submit" type="submit" ${authLoading ? "disabled" : ""}>${authLoading ? "Procesando..." : authMode === "signup" ? "Crear cuenta" : "Entrar"}</button>
         </form>
         ${authMessage ? `<p class="auth-note ok">${authMessage}</p>` : ""}
         ${authError ? `<p class="auth-note bad">${authError}</p>` : ""}
@@ -1219,14 +1242,27 @@ function renderModuleTheory(mod, moduleLessons) {
     exam: ["Revisar preguntas del módulo", "Volver a las cápsulas débiles"],
   };
   const needsManual = moduleLessons.length === 0 || mod.id === "11";
+  const completion = Math.min(100, pct(state.mastered[mod.id] || 0, Math.max(byModule(mod.id).length, 1)));
   return `
-    <section class="teoria-header">
-      <h1>${mod.title}</h1>
-      <p>${mod.subtitle}</p>
-    </section>
-    <section class="module-actions-row">
-      ${audioPlaying ? `<button class="primary" data-action="stop-audio">${icon("pause")}Detener audio</button>` : `<button class="primary" data-action="listen-module" data-audio-module="${mod.id}">${icon("volume")}Escuchar resumen</button>`}
-      <button class="secondary" data-action="download-module" data-download-module="${mod.id}">${icon("book")}Descargar PDF</button>
+    <section class="course-hero">
+      <nav class="course-breadcrumb">
+        <span>Cursos</span>
+        <b>›</b>
+        <span>Módulo ${modules.indexOf(mod) + 1}</span>
+      </nav>
+      <div class="course-hero-grid">
+        <div>
+          <p class="eyebrow">Preparación MINSAL</p>
+          <h1>Módulo ${modules.indexOf(mod) + 1}: ${mod.title}</h1>
+          <p>${mod.subtitle}. ${guide.hook}</p>
+        </div>
+        <aside class="course-progress-card">
+          <h3>Progreso del módulo</h3>
+          <div class="progress"><span style="width:${completion}%"></span></div>
+          <div><span>${completion}% completado</span><span>${moduleLessons.length} textos</span></div>
+          <button class="secondary" data-study-tab="trivia">${icon("zap")}Practicar ahora</button>
+        </aside>
+      </div>
     </section>
     ${needsManual ? `
       <aside class="manual-alert">
@@ -1237,10 +1273,49 @@ function renderModuleTheory(mod, moduleLessons) {
         </div>
       </aside>
     ` : ""}
-    <section class="module-guide">
+    <section class="course-layout">
+      <div class="course-main-column">
+        <article class="course-card course-summary-card">
+          <div class="course-card-title">
+            <span>${icon("book")}</span>
+            <h2>${summaryTitleForModule(mod.id)}</h2>
+          </div>
+          <p>${guide.hook}</p>
+          <div class="course-two-col">
+            <div>
+              <h3>Concepto clave</h3>
+              <p>${conceptTextForModule(mod.id, guide)}</p>
+            </div>
+            <ul class="course-checks">
+              ${guide.essentials.slice(0, 3).map((item) => `<li>${icon("check")}<span>${item}</span></li>`).join("")}
+            </ul>
+          </div>
+        </article>
+        ${renderModuleComparison(mod.id, guide)}
+        ${renderModuleDiagram(mod.id, guide)}
+      </div>
+      <aside class="course-side-column">
+        <article class="course-card tips-card">
+          <div class="course-card-title">
+            <span>${icon("zap")}</span>
+            <h2>Tips Examen MINSAL</h2>
+          </div>
+          <ul>
+            ${guide.exam.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+          <button class="primary" data-action="download-module" data-download-module="${mod.id}">${icon("book")}Descargar resumen PDF</button>
+        </article>
+        <article class="course-card audio-card">
+          <h2>Audio de estudio</h2>
+          <p>Escucha la unidad mientras repasas desde el celular.</p>
+          ${audioPlaying ? `<button class="primary audio-stop" data-action="stop-audio">${icon("pause")}Detener audio</button>` : `<button class="primary" data-action="listen-module" data-audio-module="${mod.id}">${icon("volume")}Escuchar resumen</button>`}
+        </article>
+      </aside>
+    </section>
+    <section class="module-guide module-guide-legacy">
       <article class="guide-card guide-main">
-        <span>${icon("book")}</span>
-        <h2>Idea central</h2>
+        <span>${icon("route")}</span>
+        <h2>Ruta mental</h2>
         <p>${guide.hook}</p>
       </article>
       <article class="guide-card guide-map">
@@ -1275,6 +1350,103 @@ function renderModuleTheory(mod, moduleLessons) {
         </article>
       ` : ""}
     </section>
+  `;
+}
+
+function summaryTitleForModule(moduleId) {
+  const titles = {
+    "1": "Historia, Yin-Yang y Wu Xing",
+    "2": "Zang-Fu, Qi, Sangre y Fluidos",
+    "3": "Canales, colaterales y puntos",
+    "4": "Diagnóstico por patrones",
+    "8": "Seguridad y derivación",
+    "9": "Normativa sanitaria",
+    "10": "Sistema de salud chileno",
+  };
+  return titles[moduleId] || "Resumen de la unidad";
+}
+
+function conceptTextForModule(moduleId, guide) {
+  const concepts = {
+    "1": "Yin-Yang ordena los opuestos complementarios; Wu Xing muestra cómo los fenómenos se generan y controlan para mantener equilibrio.",
+    "2": "Los órganos en MTC son funciones: transforman, almacenan, movilizan, nutren y regulan el equilibrio interno.",
+    "3": "El canal explica el recorrido; la categoría del punto explica por qué se elige clínicamente.",
+    "4": "Un diagnóstico correcto integra signos, síntomas, lengua y pulso antes de nombrar el patrón.",
+    "5": "Un síndrome es una constelación de señales, no una palabra aislada.",
+    "6": "Cada técnica necesita indicación, dosis, contraindicación y bioseguridad.",
+    "7": "El tratamiento nace del principio terapéutico: primero razonar, después elegir puntos.",
+  };
+  return concepts[moduleId] || guide.essentials[0] || guide.hook;
+}
+
+function renderModuleComparison(moduleId, guide) {
+  if (moduleId === "1") {
+    return `
+      <article class="course-card comparison-card">
+        <header><h2>Atributos comparativos</h2></header>
+        <div class="yin-yang-table">
+          <section>
+            <h3>${icon("pause")}Yin</h3>
+            ${[
+              ["Temperatura", "Frío"],
+              ["Luz", "Oscuridad"],
+              ["Ubicación", "Interior"],
+              ["Estado", "Reposo"],
+            ].map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join("")}
+          </section>
+          <section>
+            <h3>${icon("volume")}Yang</h3>
+            ${[
+              ["Temperatura", "Calor"],
+              ["Luz", "Luz"],
+              ["Ubicación", "Exterior"],
+              ["Estado", "Movimiento"],
+            ].map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join("")}
+          </section>
+        </div>
+      </article>
+    `;
+  }
+  return `
+    <article class="course-card comparison-card">
+      <header><h2>Tabla de examen</h2></header>
+      <table class="exam-table stitched-table">
+        ${guide.table.map((row, index) => `<tr>${row.map((cell) => index === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`).join("")}</tr>`).join("")}
+      </table>
+    </article>
+  `;
+}
+
+function renderModuleDiagram(moduleId, guide) {
+  if (moduleId === "1") {
+    const elements = ["Madera", "Fuego", "Tierra", "Metal", "Agua"];
+    return `
+      <article class="course-card diagram-card">
+        <div class="diagram-copy">
+          <h2>Teoría de los Cinco Elementos</h2>
+          <p>El ciclo de generación nutre al siguiente elemento; el ciclo de control regula para evitar desbordes.</p>
+          <div class="cycle-notes">
+            <div><strong>Ciclo Cheng</strong><span>Madera → Fuego → Tierra → Metal → Agua</span></div>
+            <div><strong>Ciclo Ke</strong><span>Madera controla Tierra; Agua controla Fuego.</span></div>
+          </div>
+        </div>
+        <div class="wuxing-wheel" aria-label="Diagrama Wu Xing">
+          ${elements.map((item, index) => `<span style="--i:${index}">${item}</span>`).join("")}
+          <b>Wu Xing</b>
+        </div>
+      </article>
+    `;
+  }
+  return `
+    <article class="course-card diagram-card">
+      <div class="diagram-copy">
+        <h2>Flujo de razonamiento</h2>
+        <p>Usa este recorrido para transformar la teoría en respuesta de examen.</p>
+      </div>
+      <div class="stitched-flow">
+        ${guide.flow.map((step, index) => `<div><b>${index + 1}</b><span>${step}</span></div>`).join("")}
+      </div>
+    </article>
   `;
 }
 
@@ -1761,7 +1933,15 @@ document.addEventListener("click", (event) => {
   const audioModuleId = target.dataset.audioModule;
   const downloadModuleId = target.dataset.downloadModule;
   const studyTab = target.dataset.studyTab;
+  const nextAuthMode = target.dataset.authMode;
   if (target.disabled) return;
+  if (action === "auth-mode" && nextAuthMode) {
+    authMode = nextAuthMode;
+    authMessage = "";
+    authError = "";
+    render();
+    return;
+  }
   if (studyTab) {
     activeStudyTab = studyTab;
     render();
@@ -1851,17 +2031,21 @@ document.addEventListener("submit", async (event) => {
   const form = event.target.closest("[data-auth-form]");
   if (!form) return;
   event.preventDefault();
-  const email = new FormData(form).get("email")?.toString().trim();
-  if (!email) return;
+  const formData = new FormData(form);
+  const email = formData.get("email")?.toString().trim();
+  const password = formData.get("password")?.toString();
+  if (!email || !password) return;
   authLoading = true;
   authMessage = "";
   authError = "";
   render();
   try {
-    await sendLoginLink(email);
-    authMessage = `Listo. Revisa ${email} y abre el enlace de ShenQi.`;
+    authMessage = await authenticateWithPassword(authMode, email, password);
+    if (currentUser) {
+      screen = "home";
+    }
   } catch (error) {
-    authError = error.message || "No se pudo enviar el enlace.";
+    authError = error.message || "No se pudo autenticar.";
   } finally {
     authLoading = false;
     render();

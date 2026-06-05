@@ -1,4 +1,4 @@
-const CACHE_NAME = "shenqi-v16";
+const CACHE_NAME = "shenqi-v18";
 const ASSETS = [
   "./",
   "./index.html",
