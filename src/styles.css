@@ -286,6 +286,17 @@ svg {
   margin-top: 10px;
 }
 
+.auth-link {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 8px 0;
+  color: var(--green);
+  background: transparent;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .auth-note {
   margin: 16px 0 0;
   padding: 12px 14px;

@@ -320,6 +320,7 @@ async function refreshAuthSession(authSession) {
 async function handleAuthRedirect() {
   if (!window.location.hash.includes("access_token")) return;
   const params = new URLSearchParams(window.location.hash.slice(1));
+  const type = params.get("type");
   const authSession = {
     access_token: params.get("access_token"),
     refresh_token: params.get("refresh_token"),
@@ -328,7 +329,12 @@ async function handleAuthRedirect() {
   if (authSession.access_token) {
     saveAuthSession(authSession);
     window.history.replaceState({}, document.title, authRedirectUrl());
-    authMessage = "Sesion iniciada. Ya puedes estudiar.";
+    if (type === "recovery") {
+      authMode = "reset";
+      authMessage = "Escribe tu nueva contraseña.";
+    } else {
+      authMessage = "Sesion iniciada. Ya puedes estudiar.";
+    }
   }
 }
 
@@ -381,6 +387,40 @@ async function authenticateWithPassword(mode, email, password) {
     return "Cuenta creada. Revisa tu correo para confirmar y luego entra con tu contraseña.";
   }
   return "Revisa tu correo para confirmar la cuenta.";
+}
+
+async function sendRecoveryEmail(email) {
+  if (!supabaseEnabled()) throw new Error("Supabase no esta configurado.");
+  const response = await fetch(`${supabaseBaseUrl()}/auth/v1/recover?redirect_to=${encodeURIComponent(authRedirectUrl())}`, {
+    method: "POST",
+    headers: supabaseHeaders(),
+    body: JSON.stringify({ email }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload.msg || payload.message || payload.error_description || "No se pudo enviar el correo de recuperacion.";
+    throw new Error(message);
+  }
+  return `Te enviamos un enlace para recuperar la contraseña a ${email}.`;
+}
+
+async function updatePassword(password) {
+  const authSession = readAuthSession();
+  if (!authSession?.access_token) throw new Error("El enlace de recuperacion expiro. Pide uno nuevo.");
+  const response = await fetch(`${supabaseBaseUrl()}/auth/v1/user`, {
+    method: "PUT",
+    headers: supabaseHeaders(authSession.access_token),
+    body: JSON.stringify({ password }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload.msg || payload.message || payload.error_description || "No se pudo actualizar la contraseña.";
+    throw new Error(message);
+  }
+  currentUser = payload || await fetchAuthUser(authSession.access_token);
+  authMode = "signin";
+  state = loadState();
+  return "Contraseña actualizada. Ya puedes estudiar.";
 }
 
 async function signOut() {
@@ -1126,6 +1166,22 @@ function renderHome() {
 }
 
 function renderLogin() {
+  const isRecover = authMode === "recover";
+  const isReset = authMode === "reset";
+  const title = isReset
+    ? "Crea una contraseña nueva."
+    : isRecover
+      ? "Recupera tu contraseña."
+      : authMode === "signup"
+        ? "Crea tu cuenta ShenQi."
+        : "Entra para continuar tu progreso.";
+  const copy = isReset
+    ? "El enlace fue validado. Escribe una contraseña nueva para volver a entrar a ShenQi."
+    : isRecover
+      ? "Te enviaremos un enlace seguro para crear una contraseña nueva."
+      : authMode === "signup"
+        ? "Usa correo y contraseña. Tu avance quedara separado del resto de usuarios."
+        : "Accede con tu correo y contraseña para recuperar XP, errores y racha.";
   return `
     <main class="auth-screen">
       <section class="auth-card">
@@ -1138,20 +1194,28 @@ function renderLogin() {
         </div>
         <div class="auth-copy">
           <p class="eyebrow">Acceso privado</p>
-          <h1>${authMode === "signup" ? "Crea tu cuenta ShenQi." : "Entra para continuar tu progreso."}</h1>
-          <p>${authMode === "signup" ? "Usa correo y contraseña. Tu avance quedara separado del resto de usuarios." : "Accede con tu correo y contraseña para recuperar XP, errores y racha."}</p>
+          <h1>${title}</h1>
+          <p>${copy}</p>
         </div>
-        <div class="auth-tabs">
-          <button class="${authMode === "signin" ? "active" : ""}" data-action="auth-mode" data-auth-mode="signin">Entrar</button>
-          <button class="${authMode === "signup" ? "active" : ""}" data-action="auth-mode" data-auth-mode="signup">Crear cuenta</button>
-        </div>
+        ${isReset ? "" : `
+          <div class="auth-tabs">
+            <button class="${authMode === "signin" ? "active" : ""}" data-action="auth-mode" data-auth-mode="signin">Entrar</button>
+            <button class="${authMode === "signup" ? "active" : ""}" data-action="auth-mode" data-auth-mode="signup">Crear cuenta</button>
+          </div>
+        `}
         <form class="auth-form" data-auth-form>
-          <label for="login-email">Correo</label>
-          <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required />
-          <label for="login-password">Contraseña</label>
-          <input id="login-password" name="password" type="password" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}" minlength="6" placeholder="Minimo 6 caracteres" required />
-          <button class="primary auth-submit" type="submit" ${authLoading ? "disabled" : ""}>${authLoading ? "Procesando..." : authMode === "signup" ? "Crear cuenta" : "Entrar"}</button>
+          ${isReset ? "" : `
+            <label for="login-email">Correo</label>
+            <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required />
+          `}
+          ${isRecover ? "" : `
+            <label for="login-password">${isReset ? "Nueva contraseña" : "Contraseña"}</label>
+            <input id="login-password" name="password" type="password" autocomplete="${authMode === "signup" || isReset ? "new-password" : "current-password"}" minlength="6" placeholder="Minimo 6 caracteres" required />
+          `}
+          <button class="primary auth-submit" type="submit" ${authLoading ? "disabled" : ""}>${authLoading ? "Procesando..." : isReset ? "Guardar contraseña" : isRecover ? "Enviar enlace" : authMode === "signup" ? "Crear cuenta" : "Entrar"}</button>
         </form>
+        ${authMode === "signin" ? `<button class="auth-link" data-action="auth-mode" data-auth-mode="recover">Olvidé mi contraseña</button>` : ""}
+        ${authMode === "recover" ? `<button class="auth-link" data-action="auth-mode" data-auth-mode="signin">Volver a entrar</button>` : ""}
         ${authMessage ? `<p class="auth-note ok">${authMessage}</p>` : ""}
         ${authError ? `<p class="auth-note bad">${authError}</p>` : ""}
       </section>
@@ -1907,7 +1971,7 @@ function renderEmpty(message) {
 
 function render() {
   const app = document.getElementById("app");
-  if (!currentUser) {
+  if (!currentUser || authMode === "reset") {
     app.innerHTML = renderLogin();
     return;
   }
@@ -2034,13 +2098,21 @@ document.addEventListener("submit", async (event) => {
   const formData = new FormData(form);
   const email = formData.get("email")?.toString().trim();
   const password = formData.get("password")?.toString();
-  if (!email || !password) return;
+  if (authMode === "recover" && !email) return;
+  if (authMode === "reset" && !password) return;
+  if (!["recover", "reset"].includes(authMode) && (!email || !password)) return;
   authLoading = true;
   authMessage = "";
   authError = "";
   render();
   try {
-    authMessage = await authenticateWithPassword(authMode, email, password);
+    if (authMode === "recover") {
+      authMessage = await sendRecoveryEmail(email);
+    } else if (authMode === "reset") {
+      authMessage = await updatePassword(password);
+    } else {
+      authMessage = await authenticateWithPassword(authMode, email, password);
+    }
     if (currentUser) {
       screen = "home";
     }
