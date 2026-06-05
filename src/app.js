@@ -1,6 +1,8 @@
 const STORE_KEY = "minsal-acupuntura-progress-v1";
 const STREAK_KEY = "shenqi_racha";
 const AUTH_KEY = "shenqi_auth_session";
+const AUTH_EMAIL_COOLDOWN_KEY = "shenqi_auth_email_cooldown_until";
+const AUTH_EMAIL_COOLDOWN_MS = 5 * 60 * 1000;
 
 const modules = [
   {
@@ -248,6 +250,7 @@ let authLoading = false;
 let authMode = "signin";
 let authMessage = "";
 let authError = "";
+let authEmailCooldownUntil = Number(localStorage.getItem(AUTH_EMAIL_COOLDOWN_KEY) || 0);
 
 function supabaseEnabled() {
   const config = window.SHENQI_SUPABASE || {};
@@ -269,6 +272,48 @@ function supabaseHeaders(token = window.SHENQI_SUPABASE?.anonKey) {
 
 function authRedirectUrl() {
   return `${window.location.origin}${window.location.pathname}`;
+}
+
+function authCooldownSeconds() {
+  return Math.max(0, Math.ceil((authEmailCooldownUntil - Date.now()) / 1000));
+}
+
+function setAuthEmailCooldown(ms = AUTH_EMAIL_COOLDOWN_MS) {
+  authEmailCooldownUntil = Date.now() + ms;
+  localStorage.setItem(AUTH_EMAIL_COOLDOWN_KEY, String(authEmailCooldownUntil));
+}
+
+function clearAuthEmailCooldown() {
+  authEmailCooldownUntil = 0;
+  localStorage.removeItem(AUTH_EMAIL_COOLDOWN_KEY);
+}
+
+function formatCooldown(seconds) {
+  if (seconds >= 60) return `${Math.ceil(seconds / 60)} min`;
+  return `${seconds} seg`;
+}
+
+function friendlyAuthError(message) {
+  const normalized = String(message || "").toLowerCase();
+  if (normalized.includes("email rate limit exceeded") || normalized.includes("rate limit")) {
+    return "Se hicieron demasiados envíos de correo. Espera unos minutos y vuelve a intentarlo.";
+  }
+  if (normalized.includes("invalid login credentials")) {
+    return "Correo o contraseña incorrectos.";
+  }
+  if (normalized.includes("email not confirmed")) {
+    return "Primero confirma tu correo desde el enlace que te enviamos.";
+  }
+  if (normalized.includes("user already registered") || normalized.includes("already registered")) {
+    return "Ese correo ya tiene cuenta. Entra con tu contraseña o usa recuperar contraseña.";
+  }
+  if (normalized.includes("password should be at least") || normalized.includes("password")) {
+    return "La contraseña debe tener al menos 6 caracteres.";
+  }
+  if (normalized.includes("otp_expired") || normalized.includes("expired")) {
+    return "El enlace expiró. Pide uno nuevo desde recuperar contraseña.";
+  }
+  return message || "No se pudo autenticar.";
 }
 
 function readAuthSession() {
@@ -391,6 +436,10 @@ async function authenticateWithPassword(mode, email, password) {
 
 async function sendRecoveryEmail(email) {
   if (!supabaseEnabled()) throw new Error("Supabase no esta configurado.");
+  const remaining = authCooldownSeconds();
+  if (remaining > 0) {
+    throw new Error(`Espera ${formatCooldown(remaining)} antes de pedir otro enlace.`);
+  }
   const response = await fetch(`${supabaseBaseUrl()}/auth/v1/recover?redirect_to=${encodeURIComponent(authRedirectUrl())}`, {
     method: "POST",
     headers: supabaseHeaders(),
@@ -399,8 +448,12 @@ async function sendRecoveryEmail(email) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = payload.msg || payload.message || payload.error_description || "No se pudo enviar el correo de recuperacion.";
+    if (String(message).toLowerCase().includes("rate limit")) {
+      setAuthEmailCooldown();
+    }
     throw new Error(message);
   }
+  setAuthEmailCooldown();
   return `Te enviamos un enlace para recuperar la contraseña a ${email}.`;
 }
 
@@ -1168,6 +1221,19 @@ function renderHome() {
 function renderLogin() {
   const isRecover = authMode === "recover";
   const isReset = authMode === "reset";
+  const recoveryWait = isRecover ? authCooldownSeconds() : 0;
+  const submitDisabled = authLoading || recoveryWait > 0;
+  const submitText = authLoading
+    ? "Procesando..."
+    : recoveryWait > 0
+      ? `Espera ${formatCooldown(recoveryWait)}`
+      : isReset
+        ? "Guardar contraseña"
+        : isRecover
+          ? "Enviar enlace"
+          : authMode === "signup"
+            ? "Crear cuenta"
+            : "Entrar";
   const title = isReset
     ? "Crea una contraseña nueva."
     : isRecover
@@ -1212,7 +1278,7 @@ function renderLogin() {
             <label for="login-password">${isReset ? "Nueva contraseña" : "Contraseña"}</label>
             <input id="login-password" name="password" type="password" autocomplete="${authMode === "signup" || isReset ? "new-password" : "current-password"}" minlength="6" placeholder="Minimo 6 caracteres" required />
           `}
-          <button class="primary auth-submit" type="submit" ${authLoading ? "disabled" : ""}>${authLoading ? "Procesando..." : isReset ? "Guardar contraseña" : isRecover ? "Enviar enlace" : authMode === "signup" ? "Crear cuenta" : "Entrar"}</button>
+          <button class="primary auth-submit" type="submit" ${submitDisabled ? "disabled" : ""}>${submitText}</button>
         </form>
         ${authMode === "signin" ? `<button class="auth-link" data-action="auth-mode" data-auth-mode="recover">Olvidé mi contraseña</button>` : ""}
         ${authMode === "recover" ? `<button class="auth-link" data-action="auth-mode" data-auth-mode="signin">Volver a entrar</button>` : ""}
@@ -2117,7 +2183,7 @@ document.addEventListener("submit", async (event) => {
       screen = "home";
     }
   } catch (error) {
-    authError = error.message || "No se pudo autenticar.";
+    authError = friendlyAuthError(error.message);
   } finally {
     authLoading = false;
     render();
