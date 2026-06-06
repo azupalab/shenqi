@@ -296,7 +296,7 @@ function formatCooldown(seconds) {
 function friendlyAuthError(message) {
   const normalized = String(message || "").toLowerCase();
   if (normalized.includes("email rate limit exceeded") || normalized.includes("rate limit")) {
-    return "Se hicieron demasiados envíos de correo. Espera unos minutos y vuelve a intentarlo.";
+    return "Se hicieron demasiados envíos de correo de confirmación. Espera unos minutos y vuelve a intentarlo.";
   }
   if (normalized.includes("invalid login credentials")) {
     return "Correo o contraseña incorrectos.";
@@ -402,6 +402,12 @@ async function loadAuthUser() {
 
 async function authenticateWithPassword(mode, email, password) {
   if (!supabaseEnabled()) throw new Error("Supabase no esta configurado.");
+  if (mode === "signup") {
+    const remaining = authCooldownSeconds();
+    if (remaining > 0) {
+      throw new Error(`Espera ${formatCooldown(remaining)} antes de crear otra cuenta o pedir otro correo.`);
+    }
+  }
   const endpoint = mode === "signup"
     ? `${supabaseBaseUrl()}/auth/v1/signup`
     : `${supabaseBaseUrl()}/auth/v1/token?grant_type=password`;
@@ -417,6 +423,9 @@ async function authenticateWithPassword(mode, email, password) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = payload.msg || payload.message || payload.error_description || "No se pudo autenticar.";
+    if (mode === "signup" && String(message).toLowerCase().includes("rate limit")) {
+      setAuthEmailCooldown();
+    }
     throw new Error(message);
   }
   if (payload.access_token) {
@@ -429,6 +438,7 @@ async function authenticateWithPassword(mode, email, password) {
     return "Sesion iniciada.";
   }
   if (mode === "signup") {
+    setAuthEmailCooldown();
     return "Cuenta creada. Revisa tu correo para confirmar y luego entra con tu contraseña.";
   }
   return "Revisa tu correo para confirmar la cuenta.";
@@ -1221,12 +1231,12 @@ function renderHome() {
 function renderLogin() {
   const isRecover = authMode === "recover";
   const isReset = authMode === "reset";
-  const recoveryWait = isRecover ? authCooldownSeconds() : 0;
-  const submitDisabled = authLoading || recoveryWait > 0;
+  const emailWait = ["recover", "signup"].includes(authMode) ? authCooldownSeconds() : 0;
+  const submitDisabled = authLoading || emailWait > 0;
   const submitText = authLoading
     ? "Procesando..."
-    : recoveryWait > 0
-      ? `Espera ${formatCooldown(recoveryWait)}`
+    : emailWait > 0
+      ? `Espera ${formatCooldown(emailWait)}`
       : isReset
         ? "Guardar contraseña"
         : isRecover
