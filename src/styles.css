@@ -695,9 +695,10 @@ svg {
   border-radius: 8px;
 }
 
-.option:hover,
-.option.chosen {
-  border-color: var(--green);
+@media (hover: hover) and (pointer: fine) {
+  .option:not(.correct):not(.wrong):hover {
+    border-color: rgba(93, 46, 63, 0.35);
+  }
 }
 
 .option.correct {

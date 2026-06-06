@@ -1695,7 +1695,7 @@ function renderQuiz() {
             const status = session.checked
               ? correct ? "correct" : chosen ? "wrong" : ""
               : "";
-            return `<button class="option ${chosen ? "chosen" : ""} ${status}" data-answer="${index}">
+            return `<button class="option ${chosen && session.checked ? "chosen" : ""} ${status}" data-answer="${index}">
               <span>${String.fromCharCode(65 + index)}</span>${option}
             </button>`;
           }).join("")}
