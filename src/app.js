@@ -1458,6 +1458,7 @@ function renderModuleTheory(mod, moduleLessons) {
   };
   const needsManual = moduleLessons.length === 0 || mod.id === "11";
   const completion = Math.min(100, pct(state.mastered[mod.id] || 0, Math.max(byModule(mod.id).length, 1)));
+  const moduleArticle = buildModuleArticle(mod, guide, deepGuide, moduleLessons);
   return `
     <section class="course-hero">
       <nav class="course-breadcrumb">
@@ -1488,125 +1489,45 @@ function renderModuleTheory(mod, moduleLessons) {
         </div>
       </aside>
     ` : ""}
-    <section class="course-layout">
-      <div class="course-main-column">
-        <article class="course-card course-summary-card theory-primer">
-          <div class="course-card-title">
-            <span>${icon("book")}</span>
-            <div>
-              <p class="eyebrow">Idea central</p>
-              <h2>${summaryTitleForModule(mod.id)}</h2>
-            </div>
-          </div>
-          <p class="lead-copy">${deepGuide.core}</p>
-          <div class="course-two-col">
-            <div>
-              <h3>Cómo pensarlo</h3>
-              <p>${conceptTextForModule(mod.id, guide)}</p>
-            </div>
-            <ul class="course-checks">
-              ${guide.essentials.slice(0, 3).map((item) => `<li>${icon("check")}<span>${item}</span></li>`).join("")}
-            </ul>
-          </div>
-        </article>
-        ${renderTheoryLearningMap(deepGuide)}
-        ${renderModuleComparison(mod.id, guide)}
-        ${renderModuleDiagram(mod.id, guide)}
-        ${renderTheoryCase(deepGuide)}
-        ${renderSourceLessons(moduleLessons)}
-      </div>
-      <aside class="course-side-column">
-        <article class="course-card quick-order-card">
-          <div class="course-card-title">
-            <span>${icon("route")}</span>
-            <h2>Orden de estudio</h2>
-          </div>
-          <ol>
-            ${guide.flow.map((step) => `<li>${step}</li>`).join("")}
-          </ol>
-        </article>
-        <article class="course-card tips-card">
-          <div class="course-card-title">
-            <span>${icon("zap")}</span>
-            <h2>Tips Examen MINSAL</h2>
-          </div>
-          <ul>
-            ${guide.exam.map((item) => `<li>${item}</li>`).join("")}
-          </ul>
-          <button class="primary" data-action="download-module" data-download-module="${mod.id}">${icon("book")}Descargar resumen PDF</button>
-        </article>
-        <article class="course-card trap-card">
-          <h2>Errores frecuentes</h2>
-          <ul>
-            ${deepGuide.traps.map((item) => `<li>${item}</li>`).join("")}
-          </ul>
-        </article>
-        <article class="course-card audio-card">
-          <h2>Audio de estudio</h2>
-          <p>Escucha la unidad mientras repasas desde el celular.</p>
-          ${audioPlaying ? `<button class="primary audio-stop" data-action="stop-audio">${icon("pause")}Detener audio</button>` : `<button class="primary" data-action="listen-module" data-audio-module="${mod.id}">${icon("volume")}Escuchar resumen</button>`}
-        </article>
-      </aside>
-    </section>
-  `;
-}
-
-function renderTheoryLearningMap(deepGuide) {
-  return `
-    <article class="course-card learning-map-card">
-      <div class="course-card-title">
-        <span>${icon("map")}</span>
-        <h2>Mapa de comprensión</h2>
-      </div>
-      <div class="learning-map-grid">
-        ${deepGuide.learn.map(([title, text], index) => `
-          <section>
-            <b>${index + 1}</b>
-            <h3>${title}</h3>
-            <p>${text}</p>
-          </section>
-        `).join("")}
+    <article class="gamma-article module-theory-article">
+      ${renderArticleMediaSlot(`${mod.title} resumen visual`, 0, { moduleId: mod.id, title: mod.title })}
+      <section>
+        <p class="article-kicker">Resumen esencial</p>
+        <h2>${summaryTitleForModule(mod.id)}</h2>
+        <p class="article-lead">${deepGuide.core}</p>
+        <p>${conceptTextForModule(mod.id, guide)}</p>
+      </section>
+      <section>
+        <h2>Puntos importantes del módulo</h2>
+        ${moduleArticle.map((paragraph) => `<p>${paragraph}</p>`).join("")}
+      </section>
+      ${moduleLessons.length ? `
+        <section>
+          <h2>Textos usados para este resumen</h2>
+          <p>${moduleLessons.map((lesson) => lesson.title).slice(0, 4).join(" · ")}</p>
+        </section>
+      ` : ""}
+      <div class="article-actions">
+        ${audioPlaying ? `<button class="primary audio-stop" data-action="stop-audio">${icon("pause")}Detener audio</button>` : `<button class="primary" data-action="listen-module" data-audio-module="${mod.id}">${icon("volume")}Escuchar resumen</button>`}
+        <button class="secondary" data-action="download-module" data-download-module="${mod.id}">${icon("book")}Descargar PDF</button>
       </div>
     </article>
   `;
 }
 
-function renderTheoryCase(deepGuide) {
-  return `
-    <article class="course-card applied-case-card">
-      <div>
-        <p class="eyebrow">Ejemplo aplicado</p>
-        <h2>Cómo usar esto en una pregunta</h2>
-        <p>${deepGuide.case}</p>
-      </div>
-      <div class="answer-method">
-        <span>1. Detecta el tema</span>
-        <span>2. Busca la función clave</span>
-        <span>3. Descarta lo peligroso o incoherente</span>
-        <span>4. Revisa la explicación si fallas</span>
-      </div>
-    </article>
-  `;
-}
-
-function renderSourceLessons(moduleLessons) {
-  if (!moduleLessons.length) return "";
-  return `
-    <article class="course-card source-lessons-card">
-      <div class="course-card-title">
-        <span>${icon("book")}</span>
-        <h2>Textos fuente de esta unidad</h2>
-      </div>
-      <div class="source-lessons-list">
-        ${moduleLessons.slice(0, 5).map((lesson) => `
-          <button data-lesson="${lesson.id}">
-            <strong>${lesson.title}</strong>
-            <span>${lesson.readingMinutes} min · ${lesson.capsules.length} cápsulas</span>
-          </button>
-        `).join("")}
-      </div>
-    </article>
-  `;
+function buildModuleArticle(mod, guide, deepGuide, moduleLessons) {
+  const sourcePoints = moduleLessons
+    .flatMap((lesson) => lesson.capsules)
+    .filter((capsule) => !isFillerCapsule(capsule, 1))
+    .slice(0, 3)
+    .map((capsule) => capsule.paragraphs.find((paragraph) => paragraph.length > 90))
+    .filter(Boolean);
+  const fallback = [
+    guide.essentials.slice(0, 3).join(". ") + ".",
+    deepGuide.case,
+    `Para contestar preguntas de ${mod.title}, privilegia la función central y descarta opciones que mezclen conceptos de otros módulos.`,
+  ];
+  return (sourcePoints.length ? sourcePoints : fallback).slice(0, 3);
 }
 
 function summaryTitleForModule(moduleId) {
@@ -1963,115 +1884,85 @@ function renderLibrary() {
   `;
 }
 
-function visualKindFor(lesson, capsule, index) {
-  const text = `${lesson.title} ${capsule.title} ${capsule.paragraphs.join(" ")}`.toLowerCase();
-  if (text.includes("canal") || text.includes("colateral") || text.includes("meridiano")) return index % 2 ? "river" : "flow";
-  if (text.includes("punto") || text.includes("selección") || text.includes("seleccion")) return "table";
-  if (text.includes("diagnóstico") || text.includes("diagnostico") || text.includes("pulso") || text.includes("lengua")) return "diagnostic";
-  if (text.includes("zang") || text.includes("qi") || text.includes("sangre") || text.includes("fluido")) return "systems";
-  if (text.includes("yin") || text.includes("yang") || text.includes("wu xing") || text.includes("cinco")) return "balance";
-  if (text.includes("moxa") || text.includes("ventosa") || text.includes("auriculo")) return "technique";
-  return index % 3 === 0 ? "flow" : index % 3 === 1 ? "table" : "concept";
+function isFillerCapsule(capsule, index) {
+  const title = capsule.title.toLowerCase();
+  const text = capsule.paragraphs.join(" ").toLowerCase();
+  if (title.includes("indice") || title.includes("índice")) return true;
+  if (title.includes("referencias bibliográficas") || title.includes("referencias bibliograficas")) return true;
+  if (index === 0 && capsule.paragraphs.length <= 3 && /manual|guía|guia|basado en|examen/.test(text)) return true;
+  return false;
 }
 
-function renderLessonMap(lesson) {
-  const capsuleNames = lesson.capsules.slice(0, 5).map((capsule) => shortText(capsule.title, 34));
-  return `
-    <section class="lesson-map">
-      <div class="map-card map-main">
-        ${icon("route")}
-        <strong>Ruta mental</strong>
-        <p>${lesson.module}</p>
-      </div>
-      <div class="map-flow">
-        ${capsuleNames.map((name, index) => `
-          <div class="map-step">
-            <span>${index + 1}</span>
-            <p>${name}</p>
-          </div>
-        `).join("")}
-      </div>
-    </section>
-  `;
+function cleanArticleTitle(title) {
+  return title
+    .replace(/^\d+[\).\-\s]+/, "")
+    .replace(/^cap[ií]tulo\s+\d+[:.\-\s]*/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
-function renderCapsuleVisual(capsule, index, lesson) {
-  const kind = visualKindFor(lesson, capsule, index);
-  const words = capsule.title.split(/\s+/).filter((word) => word.length > 4).slice(0, 4);
-  if (kind === "flow") {
+function imageSuggestionFor(text, lesson) {
+  const haystack = `${lesson.title} ${lesson.module} ${text}`.toLowerCase();
+  if (haystack.includes("auriculo") || haystack.includes("oreja")) return "auriculoterapia-mapa-oreja.jpg";
+  if (haystack.includes("canal") || haystack.includes("meridiano") || haystack.includes("colateral")) return "canales-recorrido.png";
+  if (haystack.includes("punto") || haystack.includes("shu")) return "puntos-clave.png";
+  if (haystack.includes("moxa") || haystack.includes("ventosa")) return "tecnicas-moxa-ventosas.jpg";
+  if (haystack.includes("wu xing") || haystack.includes("cinco elemento")) return "cinco-elementos-wu-xing.png";
+  if (haystack.includes("zang") || haystack.includes("qi") || haystack.includes("sangre") || haystack.includes("fluido")) return "zang-fu-sustancias.png";
+  if (haystack.includes("lengua") || haystack.includes("pulso") || haystack.includes("diagn")) return "diagnostico-lengua-pulso.jpg";
+  if (haystack.includes("decreto") || haystack.includes("normativa") || haystack.includes("ley")) return "normativa-minsal.png";
+  return "resumen-visual.png";
+}
+
+function mediaAssetFor(text, lesson) {
+  const haystack = `${lesson.title} ${lesson.module} ${text}`.toLowerCase();
+  if (haystack.includes("vaso") || haystack.includes("extraordinario")) return "./public/assets/resumenes/vasos-maravillosos.jpeg";
+  if (haystack.includes("shu")) return "./public/assets/puntos-shu-antiguos.png";
+  if (haystack.includes("cun") || haystack.includes("medida")) return "./public/assets/medidas.jpg";
+  if (haystack.includes("punto") || haystack.includes("selecci")) return "./public/assets/resumenes/como-elegir-puntos.png";
+  if (haystack.includes("canal") || haystack.includes("meridiano")) return "./public/assets/resumenes/resumen-puntos-importantes.jpeg";
+  return "";
+}
+
+function renderArticleMediaSlot(text, index, lesson) {
+  const src = mediaAssetFor(text, lesson);
+  const suggestion = imageSuggestionFor(text, lesson);
+  if (src) {
     return `
-      <aside class="visual-aid flow-aid">
-        <div>${icon("route")}<strong>Flujo de estudio</strong></div>
-        <ol>
-          <li>Ubica la idea central</li>
-          <li>Relaciona canal, órgano o función</li>
-          <li>Conecta con una pregunta MINSAL</li>
-        </ol>
-      </aside>
-    `;
-  }
-  if (kind === "river") {
-    return `
-      <aside class="visual-aid river-aid">
-        <div class="river-line"><span>Qi</span><span>Xue</span><span>Jin Ye</span></div>
-        <p>Piensa los canales como una red: tronco principal, ramas, superficie y destino clínico.</p>
-      </aside>
-    `;
-  }
-  if (kind === "table") {
-    return `
-      <aside class="visual-aid table-aid">
-        <div>${icon("table")}<strong>Tabla rápida</strong></div>
-        <table>
-          <tr><th>Pregunta</th><th>Qué buscar</th></tr>
-          <tr><td>¿Qué estructura?</td><td>Canal, punto o categoría</td></tr>
-          <tr><td>¿Para qué sirve?</td><td>Función clínica principal</td></tr>
-        </table>
-      </aside>
-    `;
-  }
-  if (kind === "diagnostic") {
-    return `
-      <aside class="visual-aid diagnostic-aid">
-        <div>${icon("eye")}<strong>Cuatro puertas</strong></div>
-        <div class="pill-grid"><span>Observa</span><span>Escucha</span><span>Pregunta</span><span>Palpa</span></div>
-      </aside>
-    `;
-  }
-  if (kind === "systems") {
-    return `
-      <aside class="visual-aid systems-aid">
-        <div class="orbit"><span>Zang-Fu</span><span>Qi</span><span>Xue</span><span>Fluidos</span></div>
-      </aside>
-    `;
-  }
-  if (kind === "balance") {
-    return `
-      <aside class="visual-aid balance-aid">
-        <div><span>Yin</span><i></i><span>Yang</span></div>
-        <p>Lee cada concepto como relación dinámica, no como lista aislada.</p>
-      </aside>
-    `;
-  }
-  if (kind === "technique") {
-    return `
-      <aside class="visual-aid technique-aid">
-        <div>${icon("needle")}<strong>Técnica</strong></div>
-        <p>Recuerda: indicación, contraindicación, aplicación segura y objetivo terapéutico.</p>
-      </aside>
+      <figure class="article-media">
+        <img src="${src}" alt="${text}" loading="lazy" />
+        <figcaption>${text}</figcaption>
+      </figure>
     `;
   }
   return `
-    <aside class="visual-aid concept-aid">
-      <div>${icon("cards")}<strong>Palabras clave</strong></div>
-      <div class="pill-grid">${words.map((word) => `<span>${word}</span>`).join("")}</div>
-    </aside>
+    <figure class="article-media article-media-placeholder">
+      <div>
+        <span>${index + 1}</span>
+        <strong>Imagen sugerida</strong>
+        <small>public/assets/lesson-images/${suggestion}</small>
+      </div>
+      <figcaption>${text}</figcaption>
+    </figure>
   `;
+}
+
+function renderArticleParagraph(paragraph, index, lesson) {
+  const clean = paragraph.trim();
+  if (!clean) return "";
+  if (/^figura\s*:/i.test(clean)) {
+    return renderArticleMediaSlot(clean.replace(/^figura\s*:\s*/i, ""), index, lesson);
+  }
+  if (/^tabla\s+\d*/i.test(clean)) {
+    return renderArticleMediaSlot(clean, index, lesson);
+  }
+  return `<p>${clean}</p>`;
 }
 
 function renderLessonDetail() {
   const lesson = lessons.find((item) => item.id === activeLessonId) || lessons[0];
   if (!lesson) return renderEmpty("No hay textos originales disponibles.");
+  const articleSections = lesson.capsules.filter((capsule, index) => !isFillerCapsule(capsule, index));
   return `
     ${renderTopbar("library")}
     <main class="lesson-reader">
@@ -2086,19 +1977,15 @@ function renderLessonDetail() {
         </div>
         <small>Fuente original: ${lesson.source}</small>
       </article>
-      ${renderLessonMap(lesson)}
-      <section class="capsule-list">
-        ${lesson.capsules.map((capsule, index) => `
-          <article class="capsule-card">
-            <div class="module-index">${index + 1}</div>
-            <div>
-              <h2>${capsule.title}</h2>
-              ${renderCapsuleVisual(capsule, index, lesson)}
-              ${capsule.paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("")}
-            </div>
-          </article>
+      <article class="gamma-article lesson-article">
+        ${articleSections.map((capsule, index) => `
+          <section>
+            <h2>${cleanArticleTitle(capsule.title)}</h2>
+            ${index === 0 ? renderArticleMediaSlot(capsule.title, index, lesson) : ""}
+            ${capsule.paragraphs.map((paragraph, paragraphIndex) => renderArticleParagraph(paragraph, paragraphIndex, lesson)).join("")}
+          </section>
         `).join("")}
-      </section>
+      </article>
     </main>
     ${renderBottomNav("library")}
   `;

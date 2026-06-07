@@ -1045,6 +1045,138 @@ svg {
   margin: 22px 0 16px;
 }
 
+.gamma-article {
+  display: grid;
+  gap: clamp(28px, 5vw, 46px);
+  max-width: 860px;
+  margin: 20px auto 0;
+  padding: clamp(22px, 5vw, 52px);
+  background: #fffdf9;
+  border: 1px solid rgba(212, 195, 194, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 22px 60px rgba(75, 46, 46, 0.08);
+}
+
+.module-theory-article {
+  margin-bottom: 42px;
+}
+
+.gamma-article section {
+  display: grid;
+  gap: 14px;
+}
+
+.gamma-article section + section {
+  padding-top: clamp(20px, 4vw, 34px);
+  border-top: 1px solid rgba(212, 195, 194, 0.56);
+}
+
+.gamma-article h2 {
+  max-width: 760px;
+  margin: 0;
+  color: #1e1b1b;
+  font-size: clamp(1.55rem, 4vw, 2.6rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.gamma-article p {
+  max-width: 760px;
+  margin: 0;
+  color: #3f3935;
+  font-size: clamp(1.04rem, 2.7vw, 1.24rem);
+  line-height: 1.78;
+}
+
+.gamma-article .article-lead {
+  color: #33191a;
+  font-size: clamp(1.18rem, 3vw, 1.45rem);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.article-kicker {
+  color: #7b2e4d !important;
+  font-size: 0.78rem !important;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.2 !important;
+  text-transform: uppercase;
+}
+
+.article-media {
+  overflow: hidden;
+  margin: 4px 0 10px;
+  background: #f8f0e8;
+  border: 1px solid rgba(212, 195, 194, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(75, 46, 46, 0.08);
+}
+
+.article-media img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  padding: 18px;
+  background: #fffaf4;
+}
+
+.article-media figcaption {
+  padding: 12px 16px;
+  color: #6c5d58;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  border-top: 1px solid rgba(212, 195, 194, 0.55);
+}
+
+.article-media-placeholder {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  background:
+    linear-gradient(135deg, rgba(93, 46, 63, 0.09), rgba(149, 159, 100, 0.12)),
+    #f8f0e8;
+}
+
+.article-media-placeholder div {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.article-media-placeholder span {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  margin: 0 auto;
+  color: #fff8f7;
+  background: #5d2e3f;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.article-media-placeholder strong {
+  color: #33191a;
+  font-size: 1.05rem;
+}
+
+.article-media-placeholder small {
+  color: #6c5d58;
+  font-weight: 800;
+}
+
+.article-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(212, 195, 194, 0.56);
+}
+
 .lesson-map {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
@@ -2394,6 +2526,45 @@ svg {
   .lesson-reader {
     width: min(100% - 20px, 920px);
     padding-top: 14px;
+  }
+
+  .reader-hero {
+    padding: 22px;
+  }
+
+  .gamma-article {
+    width: 100%;
+    gap: 28px;
+    margin-top: 12px;
+    padding: 22px;
+    border-radius: 8px;
+  }
+
+  .gamma-article section + section {
+    padding-top: 24px;
+  }
+
+  .gamma-article h2 {
+    font-size: clamp(1.45rem, 7vw, 2rem);
+    line-height: 1.14;
+  }
+
+  .gamma-article p {
+    font-size: 1.05rem;
+    line-height: 1.72;
+  }
+
+  .article-media {
+    border-radius: 10px;
+  }
+
+  .article-media img {
+    max-height: 300px;
+    padding: 12px;
+  }
+
+  .article-media-placeholder {
+    min-height: 210px;
   }
 
   .reader-actions {
