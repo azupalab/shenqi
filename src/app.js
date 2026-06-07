@@ -171,6 +171,75 @@ const MODULE_GUIDES = {
   },
 };
 
+const MODULE_DEEP_GUIDES = {
+  "1": {
+    core: "Este módulo es la base conceptual. Primero ubica la historia y los textos clásicos; luego usa Yin-Yang y Wu Xing como dos lentes para ordenar síntomas, funciones y cambios.",
+    learn: [["Historia", "Te dice de dónde salen los conceptos y qué textos suelen preguntar."], ["Yin-Yang", "Ordena polaridades: frío/calor, interior/exterior, reposo/movimiento."], ["Wu Xing", "Explica relaciones de generación, control y desbalance entre órganos y fenómenos."]],
+    traps: ["Memorizar fechas sin conectar texto y aporte.", "Confundir Yin-Yang con bueno/malo.", "Aprender Wu Xing como una rueda aislada y no como relación clínica."],
+    case: "Si una pregunta menciona frío, interior, reposo o nutrición, piensa en Yin. Si menciona calor, exterior, movimiento o transformación, piensa en Yang. Después revisa si hay un ciclo de generación o control involucrado.",
+  },
+  "2": {
+    core: "No estudies Zang-Fu como anatomía occidental. En MTC, cada órgano es una función: produce, transforma, almacena, moviliza o regula sustancias vitales.",
+    learn: [["Zang", "Almacenan sustancias esenciales y se asocian a funciones más profundas."], ["Fu", "Reciben, transforman y eliminan; se relacionan con tránsito y movimiento."], ["Qi-Xue-JinYe", "Qi mueve y transforma; Xue nutre y ancla; los fluidos humectan y sostienen tejidos."]],
+    traps: ["Responder Pulmón por anatomía cuando la pregunta apunta a función.", "Olvidar que el Bazo contiene la sangre y se abre en la boca.", "Confundir producir sangre con gobernar sangre."],
+    case: "Si aparece gusto, boca, cansancio postprandial o sangre fuera de vasos, revisa Bazo. Si aparece respiración, piel, defensa o descenso, revisa Pulmón. Si aparece Shen, sangre y pulso, revisa Corazón.",
+  },
+  "3": {
+    core: "Este módulo es mapa y estrategia. Primero entiende el recorrido del canal; después mira la categoría del punto para saber por qué se usa.",
+    learn: [["Recorrido", "Ayuda a ubicar síntomas a lo largo de un canal."], ["Categoría", "Explica la función: Yuan, Luo, Xi, Shu, Mu, He-Mar."], ["Combinación", "Une puntos locales, distales y de categoría según principio terapéutico."]],
+    traps: ["Aprender listas de puntos sin su lógica.", "Confundir origen anatómico con origen interno del canal.", "Elegir puntos por nombre conocido y no por estrategia."],
+    case: "Si preguntan por el canal de Pulmón, recuerda que inicia internamente en el Jiao medio, desciende al Intestino Grueso, asciende al Pulmón y emerge hacia el tórax.",
+  },
+  "4": {
+    core: "Diagnosticar es ordenar evidencia. No basta una señal: se cruzan síntomas, lengua, pulso y ocho principios para llegar al patrón.",
+    learn: [["Cuatro métodos", "Observación, auscultación/olfacción, interrogatorio y palpación."], ["Lengua y pulso", "Son pruebas de consistencia: confirman o corrigen la hipótesis."], ["Ocho principios", "Clasifican la dirección del caso antes de nombrar el síndrome."]],
+    traps: ["Diagnosticar por un síntoma único.", "Usar lengua o pulso como dato decorativo.", "Confundir vacío de Qi con exceso por cansancio intenso."],
+    case: "Paciente con cansancio, voz baja y pulso débil orienta a vacío. Si además hay frío y lengua pálida, piensa en insuficiencia de Yang o frío por vacío, no en calor.",
+  },
+  "5": {
+    core: "Los síndromes son patrones. Sirven para explicar por qué varios signos aparecen juntos y qué principio terapéutico corresponde.",
+    learn: [["Sustancia", "Qi, Xue, Jing, fluidos, humedad, flema o estasis."], ["Órgano", "Dónde se expresa el desbalance."], ["Principio", "Tonificar, mover, calentar, enfriar, drenar o transformar."]],
+    traps: ["Confundir humedad con flema.", "Llamar estasis a cualquier dolor.", "Olvidar diferenciar raíz y manifestación."],
+    case: "Dolor fijo, punzante y crónico sugiere estasis de Xue. Pesadez, edema y secreciones sugieren humedad. Cansancio con voz débil sugiere vacío de Qi.",
+  },
+  "6": {
+    core: "Las técnicas se estudian con cuatro preguntas: cuándo, cómo, cuánto y cuándo no. La seguridad pesa tanto como la indicación.",
+    learn: [["Moxa", "Calienta, tonifica Yang y dispersa frío."], ["Ventosas", "Movilizan Qi/Xue y ayudan en estasis o superficie."], ["Auriculoterapia", "Usa un microsistema reflejo como apoyo terapéutico."]],
+    traps: ["Aplicar técnica sin revisar contraindicación.", "Confundir moxa para frío con uso indiscriminado.", "Olvidar bioseguridad y descarte de material."],
+    case: "Dolor muscular con sensación de bloqueo puede admitir ventosas; frío y vacío de Yang puede admitir moxa. Fiebre alta, piel dañada o signos de alarma cambian la conducta.",
+  },
+  "7": {
+    core: "Tratamiento no es receta. Es una cadena: diagnóstico, principio terapéutico, selección de puntos, técnica y reevaluación.",
+    learn: [["Raíz y rama", "Distingue causa profunda de síntoma visible."], ["Puntos", "Combina local, distal y categorías específicas."], ["Técnica", "Tonificación, dispersión, moxa, electro o apoyo según caso."]],
+    traps: ["Elegir puntos antes de definir principio.", "No derivar cuando hay alarma occidental.", "Confundir tratamiento sintomático con estrategia completa."],
+    case: "En dolor, pregunta: ¿es frío, calor, humedad, estasis o vacío? La respuesta cambia los puntos y la técnica. No basta con elegir el punto local.",
+  },
+  "8": {
+    core: "Salud occidental se estudia para tomar decisiones seguras: reconocer alarma, no sobretratar y derivar cuando corresponde.",
+    learn: [["Alarma", "Síntomas que exigen derivación o urgencia."], ["Primeros auxilios", "Conductas básicas antes de derivar."], ["Bioseguridad", "Prevención de daño, infección y mala práctica."]],
+    traps: ["Intentar resolver con acupuntura un cuadro de urgencia.", "No distinguir prevención de promoción.", "Subestimar signos cardiovasculares, neurológicos o infecciosos."],
+    case: "Dolor torácico, déficit neurológico súbito, fractura probable, fiebre con compromiso general o cefalea progresiva con vómitos no son casos para manejar solo con MTC.",
+  },
+  "9": {
+    core: "La normativa define límites, responsabilidades y condiciones de ejercicio. Estudiarla evita responder desde sentido común.",
+    learn: [["DS 42", "Marco general de prácticas médicas alternativas."], ["DS 123", "Reconoce y regula la acupuntura."], ["Responsabilidad", "Ejercicio seguro, registros, recintos y derivación."]],
+    traps: ["Confundir reconocimiento con permiso ilimitado.", "No distinguir norma general de norma específica.", "Olvidar que seguridad y derivación también son obligaciones."],
+    case: "Si la pregunta mezcla rol profesional, autorización sanitaria o límites de práctica, busca primero la norma y luego la conducta prudente.",
+  },
+  "10": {
+    core: "El sistema de salud se entiende como red: población, riesgo, prevención, APS, garantías y derivación.",
+    learn: [["APS", "Puerta de entrada, continuidad y resolutividad."], ["GES", "Garantías de acceso, oportunidad, protección financiera y calidad."], ["Epidemiología", "Frecuencia, distribución y determinantes de problemas de salud."]],
+    traps: ["Confundir prevención con promoción.", "Aprender GES solo como lista de enfermedades.", "Olvidar que red asistencial implica niveles y derivación."],
+    case: "Si una pregunta habla de cobertura, oportunidad o garantía explícita, piensa GES. Si habla de primera atención y continuidad, piensa APS.",
+  },
+  "11": {
+    core: "El simulacro no agrega materia nueva: mezcla todo. El objetivo es aprender a decidir bajo tiempo sin caer en distractores.",
+    learn: [["Lectura", "Identifica módulo y verbo de la pregunta."], ["Descarte", "Elimina opciones peligrosas o fuera de rol."], ["Revisión", "Vuelve a teoría solo donde fallaste."]],
+    traps: ["Responder por memoria visual de opciones.", "No leer la negación o el 'excepto'.", "Quedarse demasiado tiempo en una pregunta."],
+    case: "Cuando dudes, prioriza seguridad, normativa y coherencia clínica. Si una opción suena riesgosa para el paciente, probablemente es distractor.",
+  },
+};
+
 const payload = window.MINSAL_QUESTIONS || { questions: [], summary: {} };
 const extraPayload = window.MINSAL_EXTRA_QUESTIONS || { questions: [] };
 const QUESTION_CORRECTIONS = [
@@ -1381,6 +1450,12 @@ function renderModuleTheory(mod, moduleLessons) {
     table: [["Tema", "Clave"], [mod.title, mod.subtitle]],
     exam: ["Revisar preguntas del módulo", "Volver a las cápsulas débiles"],
   };
+  const deepGuide = MODULE_DEEP_GUIDES[mod.id] || {
+    core: guide.hook,
+    learn: guide.essentials.slice(0, 3).map((item) => [item, "Revisa este punto y luego busca una pregunta asociada."]),
+    traps: guide.exam,
+    case: "Lee la pregunta, detecta el tema, elimina distractores y vuelve a la teoría si el razonamiento no está claro.",
+  };
   const needsManual = moduleLessons.length === 0 || mod.id === "11";
   const completion = Math.min(100, pct(state.mastered[mod.id] || 0, Math.max(byModule(mod.id).length, 1)));
   return `
@@ -1415,15 +1490,18 @@ function renderModuleTheory(mod, moduleLessons) {
     ` : ""}
     <section class="course-layout">
       <div class="course-main-column">
-        <article class="course-card course-summary-card">
+        <article class="course-card course-summary-card theory-primer">
           <div class="course-card-title">
             <span>${icon("book")}</span>
-            <h2>${summaryTitleForModule(mod.id)}</h2>
+            <div>
+              <p class="eyebrow">Idea central</p>
+              <h2>${summaryTitleForModule(mod.id)}</h2>
+            </div>
           </div>
-          <p>${guide.hook}</p>
+          <p class="lead-copy">${deepGuide.core}</p>
           <div class="course-two-col">
             <div>
-              <h3>Concepto clave</h3>
+              <h3>Cómo pensarlo</h3>
               <p>${conceptTextForModule(mod.id, guide)}</p>
             </div>
             <ul class="course-checks">
@@ -1431,10 +1509,22 @@ function renderModuleTheory(mod, moduleLessons) {
             </ul>
           </div>
         </article>
+        ${renderTheoryLearningMap(deepGuide)}
         ${renderModuleComparison(mod.id, guide)}
         ${renderModuleDiagram(mod.id, guide)}
+        ${renderTheoryCase(deepGuide)}
+        ${renderSourceLessons(moduleLessons)}
       </div>
       <aside class="course-side-column">
+        <article class="course-card quick-order-card">
+          <div class="course-card-title">
+            <span>${icon("route")}</span>
+            <h2>Orden de estudio</h2>
+          </div>
+          <ol>
+            ${guide.flow.map((step) => `<li>${step}</li>`).join("")}
+          </ol>
+        </article>
         <article class="course-card tips-card">
           <div class="course-card-title">
             <span>${icon("zap")}</span>
@@ -1445,6 +1535,12 @@ function renderModuleTheory(mod, moduleLessons) {
           </ul>
           <button class="primary" data-action="download-module" data-download-module="${mod.id}">${icon("book")}Descargar resumen PDF</button>
         </article>
+        <article class="course-card trap-card">
+          <h2>Errores frecuentes</h2>
+          <ul>
+            ${deepGuide.traps.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </article>
         <article class="course-card audio-card">
           <h2>Audio de estudio</h2>
           <p>Escucha la unidad mientras repasas desde el celular.</p>
@@ -1452,44 +1548,64 @@ function renderModuleTheory(mod, moduleLessons) {
         </article>
       </aside>
     </section>
-    <section class="module-guide module-guide-legacy">
-      <article class="guide-card guide-main">
-        <span>${icon("route")}</span>
-        <h2>Ruta mental</h2>
-        <p>${guide.hook}</p>
-      </article>
-      <article class="guide-card guide-map">
-        <span>${icon("route")}</span>
-        <h2>Mapa para entender</h2>
-        <div class="concept-flow">
-          ${guide.flow.map((step, index) => `<div><b>${index + 1}</b><span>${step}</span></div>`).join("")}
-        </div>
-      </article>
-      <article class="guide-card">
-        <span>${icon("check")}</span>
-        <h2>Lo esencial</h2>
-        <ul class="study-list">${guide.essentials.map((item) => `<li>${item}</li>`).join("")}</ul>
-      </article>
-      <article class="guide-card">
-        <span>${icon("table")}</span>
-        <h2>Tabla de examen</h2>
-        <table class="exam-table">
-          ${guide.table.map((row, index) => `<tr>${row.map((cell) => index === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`).join("")}</tr>`).join("")}
-        </table>
-      </article>
-      <article class="guide-card guide-main">
-        <span>${icon("zap")}</span>
-        <h2>Cómo lo preguntan</h2>
-        <div class="exam-pills">${guide.exam.map((item) => `<span>${item}</span>`).join("")}</div>
-      </article>
-      ${moduleLessons.length ? `
-        <article class="guide-card source-card">
-          <span>${icon("book")}</span>
-          <h2>Textos cargados</h2>
-          <p>${moduleLessons.map((lesson) => lesson.title).slice(0, 4).join(" · ")}</p>
-        </article>
-      ` : ""}
-    </section>
+  `;
+}
+
+function renderTheoryLearningMap(deepGuide) {
+  return `
+    <article class="course-card learning-map-card">
+      <div class="course-card-title">
+        <span>${icon("map")}</span>
+        <h2>Mapa de comprensión</h2>
+      </div>
+      <div class="learning-map-grid">
+        ${deepGuide.learn.map(([title, text], index) => `
+          <section>
+            <b>${index + 1}</b>
+            <h3>${title}</h3>
+            <p>${text}</p>
+          </section>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function renderTheoryCase(deepGuide) {
+  return `
+    <article class="course-card applied-case-card">
+      <div>
+        <p class="eyebrow">Ejemplo aplicado</p>
+        <h2>Cómo usar esto en una pregunta</h2>
+        <p>${deepGuide.case}</p>
+      </div>
+      <div class="answer-method">
+        <span>1. Detecta el tema</span>
+        <span>2. Busca la función clave</span>
+        <span>3. Descarta lo peligroso o incoherente</span>
+        <span>4. Revisa la explicación si fallas</span>
+      </div>
+    </article>
+  `;
+}
+
+function renderSourceLessons(moduleLessons) {
+  if (!moduleLessons.length) return "";
+  return `
+    <article class="course-card source-lessons-card">
+      <div class="course-card-title">
+        <span>${icon("book")}</span>
+        <h2>Textos fuente de esta unidad</h2>
+      </div>
+      <div class="source-lessons-list">
+        ${moduleLessons.slice(0, 5).map((lesson) => `
+          <button data-lesson="${lesson.id}">
+            <strong>${lesson.title}</strong>
+            <span>${lesson.readingMinutes} min · ${lesson.capsules.length} cápsulas</span>
+          </button>
+        `).join("")}
+      </div>
+    </article>
   `;
 }
 

@@ -1862,6 +1862,31 @@ svg {
   border-color: #e6d5c3;
 }
 
+.theory-primer {
+  position: relative;
+  overflow: hidden;
+}
+
+.theory-primer::after {
+  content: "神";
+  position: absolute;
+  right: 22px;
+  bottom: -22px;
+  color: rgba(75, 46, 46, 0.06);
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.lead-copy {
+  max-width: 760px;
+  color: #33191a;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
 .course-card-title {
   display: flex;
   align-items: center;
@@ -1925,6 +1950,47 @@ svg {
   width: 18px;
   height: 18px;
   color: #5d2e3f;
+}
+
+.learning-map-card {
+  background: #fff8f7;
+}
+
+.learning-map-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.learning-map-grid section {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 188px;
+  padding: 16px;
+  background: #faf2f1;
+  border: 1px solid #e9e1e0;
+  border-radius: 8px;
+}
+
+.learning-map-grid b {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: #fff;
+  background: #4b2e2e;
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+
+.learning-map-grid h3 {
+  margin: 2px 0 0;
+  color: #33191a;
+}
+
+.learning-map-grid p {
+  margin: 0;
 }
 
 .comparison-card {
@@ -2121,6 +2187,108 @@ svg {
 .audio-card button {
   width: 100%;
   margin-top: 14px;
+}
+
+.quick-order-card {
+  background: #fff8f7;
+}
+
+.quick-order-card ol,
+.trap-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.quick-order-card li,
+.trap-card li {
+  color: #504444;
+  line-height: 1.5;
+}
+
+.quick-order-card li::marker {
+  color: #5d2e3f;
+  font-weight: 900;
+}
+
+.trap-card {
+  background: #f5eceb;
+  border-color: #baa6a2;
+}
+
+.trap-card li {
+  padding: 10px 0 10px 10px;
+  border-left: 4px solid #959f64;
+}
+
+.applied-case-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+  align-items: center;
+  color: #fff8f7;
+  background: #4b2e2e;
+  border-color: #4b2e2e;
+}
+
+.applied-case-card .eyebrow,
+.applied-case-card h2,
+.applied-case-card p {
+  color: #fff8f7;
+}
+
+.applied-case-card p {
+  opacity: 0.9;
+}
+
+.answer-method {
+  display: grid;
+  gap: 10px;
+}
+
+.answer-method span {
+  padding: 12px 14px;
+  color: #fff8f7;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.source-lessons-card {
+  background: #fff;
+}
+
+.source-lessons-list {
+  display: grid;
+  gap: 10px;
+}
+
+.source-lessons-list button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  color: #33191a;
+  background: #faf2f1;
+  border: 1px solid #d4c3c2;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.source-lessons-list button:hover {
+  border-color: #5d2e3f;
+  box-shadow: 0 12px 22px rgba(75, 46, 46, 0.08);
+  transform: translateY(-1px);
+}
+
+.source-lessons-list span {
+  color: #827473;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .audio-card {
@@ -2320,7 +2488,9 @@ svg {
   .course-layout,
   .course-two-col,
   .diagram-card,
-  .stitched-flow {
+  .stitched-flow,
+  .learning-map-grid,
+  .applied-case-card {
     grid-template-columns: 1fr;
   }
 
